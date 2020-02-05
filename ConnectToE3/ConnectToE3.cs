@@ -8,20 +8,21 @@ namespace ConnectToE3
 {
     public class AppConnect
     {
-        private  e3Application e3App = new e3Application(); //Приложение        
-        public  e3Application ToE3()
+        private  e3Application e3App = new e3Application(); // Приложение       
+        // Подключение к экземпляру E3
+        public e3Application ToE3()
         {
             Dispatcher disp = new Dispatcher();
             DispatcherViewer viewer = new DispatcherViewer();
             if (disp != null)
             {
-                Object lst = null;// Array.Empty<e3Application>();
+                Object lst = null;      // Объект списка запущенных экземпляров
                 Object e3Obj = new e3Application();
 
-                int ProcessCnt = disp.GetE3Applications(ref lst);
+                int ProcessCnt = disp.GetE3Applications(ref lst); // Получаем список запущенных экземпляров
                 if (ProcessCnt == 1)
                 {
-                    return e3App;
+                    return e3App; // Приложение одно 
                 }
                 else if ((ProcessCnt > 1))
                 {
@@ -40,8 +41,8 @@ namespace ConnectToE3
                 MessageBox.Show("Нет e3App.", "Ошибка", MessageBoxButtons.OK);
             return e3App;
         }
-
-        public  e3Application ToE3(string PrjPath)
+        // Перегрузка при подключении к конкретному проекту. PrjPath - полный путь к файлу
+        public e3Application ToE3(string PrjPath)
         {
             Dispatcher disp = new Dispatcher();
 
@@ -53,6 +54,7 @@ namespace ConnectToE3
                 {
                     e3Application App = (e3Application)disp.GetE3ByProcessId(process.Id);
                     if (App == null) continue;   // на случай открытого окна БД, повисших процессов и т.п.
+
                     e3Job Prj = App.CreateJobObject();
                     string project = Prj.GetPath() + Prj.GetName() + Prj.GetType();
 
@@ -60,14 +62,7 @@ namespace ConnectToE3
                     {
                         e3App = App;
                         break;
-                    };
-                    // Active window
-                    //e3Application e3App =(e3Application)Marshal.GetActiveObject("CT.Application");
-
-                    /*foreach (var lstelement in lst.GetType().GetMembers())
-                    {
-                        Console.WriteLine(lstelement);
-                    }*/
+                    };                    
 
                 };
             };
