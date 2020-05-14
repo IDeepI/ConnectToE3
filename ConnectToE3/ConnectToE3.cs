@@ -1,16 +1,17 @@
 ﻿using CT;
 using e3;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Windows.Forms;
 
 namespace ConnectToE3
 {
-    public class AppConnect
+    public static class AppConnect
     {
-        private  e3Application e3App = new e3Application(); // Приложение       
+        private static e3Application e3App; // Приложение       
         // Подключение к экземпляру E3
-        public e3Application ToE3()
+        public static e3Application ToE3()
         {
             Dispatcher disp = new Dispatcher();
             DispatcherViewer viewer = new DispatcherViewer();
@@ -22,6 +23,7 @@ namespace ConnectToE3
                 int ProcessCnt = disp.GetE3Applications(ref lst); // Получаем список запущенных экземпляров
                 if (ProcessCnt == 1)
                 {
+                    e3App = new e3Application();
                     return e3App; // Приложение одно 
                 }
                 else if ((ProcessCnt > 1))
@@ -41,10 +43,17 @@ namespace ConnectToE3
                 MessageBox.Show("Нет e3App.", "Ошибка", MessageBoxButtons.OK);
             return e3App;
         }
-        // Перегрузка при подключении к конкретному проекту. PrjPath - полный путь к файлу
-        public e3Application ToE3(string PrjPath)
-        {
+      
+        /// <summary>
+        /// Перегрузка при подключении к конкретному проекту. prjPath - полный путь к файлу
+        /// </summary>
+        /// <param name="prjPath"> Путь к файлу</param>
+        /// <param name="quitThenDone"> Flag True если нужно будет закрыть приложение </param>
+        /// <returns></returns>
+        public static e3Application ToE3(string prjPath, out bool quitThenDone)
+        {       
             Dispatcher disp = new Dispatcher();
+            quitThenDone = false;
 
             if (disp != null)
             {
@@ -55,21 +64,51 @@ namespace ConnectToE3
                     e3Application App = (e3Application)disp.GetE3ByProcessId(process.Id);
                     if (App == null) continue;   // на случай открытого окна БД, повисших процессов и т.п.
 
-                    e3Job Prj = App.CreateJobObject();
+                    e3Job Prj = (e3Job)App.CreateJobObject();
                     string project = Prj.GetPath() + Prj.GetName() + Prj.GetType();
-
-                    if (project == PrjPath)
+                   // MessageBox.Show(project + "\n" + PrjPath, "Ошибка", MessageBoxButtons.OK);
+                    if (string.Equals(project , prjPath, StringComparison.CurrentCultureIgnoreCase))
                     {
                         e3App = App;
                         break;
                     };                    
 
                 };
+                // Если не запущенного проекта - запускаем новый процесс
+                e3App = (e3Application)disp.OpenE3Application(prjPath);
+                quitThenDone = true;
             };
 
             if (e3App == null)
                 MessageBox.Show("Нет e3App.", "Ошибка", MessageBoxButtons.OK);
             return e3App;
+        }
+        // Получаем список открытых проектов
+        public static Dictionary<string, e3Application> GetE3ProcessDictionary()
+        {
+            Dispatcher disp = new Dispatcher();
+            Dictionary<string, e3Application> E3ProcessDictionary = new Dictionary<string, e3Application>();
+
+            if (disp != null)
+            {
+                Process[] processList = Process.GetProcessesByName("E3.series"); // получаем процессы E3.series
+
+                foreach (Process process in processList)
+                {
+                    e3Application App = (e3Application)disp.GetE3ByProcessId(process.Id);
+                    if (App == null) continue;   // на случай открытого окна БД, повисших процессов и т.п.
+
+                    e3Job Prj = (e3Job)App.CreateJobObject();
+                    string project = Prj.GetPath() + Prj.GetName() + Prj.GetType();
+
+                    if (Prj.GetName() == "") continue;   // на случай окна без проекта
+
+                    E3ProcessDictionary.Add(project, App);
+                        
+                };
+            };
+          
+            return E3ProcessDictionary;
         }
     }
 }
